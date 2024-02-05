@@ -1,0 +1,34 @@
+version: "3.8"
+services:
+  account_api:
+    build: ./account-api
+    command: python manage.py run -h 0.0.0.0
+    volumes:
+      - ./account-api/:/app
+    ports:
+      - 5001:5000
+    environment:
+      - FLASK_APP=init/__init__.py
+      - FLASK_DEBUG=1
+      - DATABASE_URL=postgresql://user:password@account_db:5432/account_db_prod
+    depends_on:
+      - account_db
+    networks:
+      - prod
+  account_db:
+    image: postgres:15-alpine
+    volumes:
+      - pgaccount_data_prod:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=account_db_prod
+    ports:
+      - "5432:5432"
+    networks:
+      - prod
+networks:
+  prod:
+    driver: bridge
+volumes:
+  pgaccount_data_prod:

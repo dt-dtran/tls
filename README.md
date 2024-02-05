@@ -37,3 +37,65 @@ Consider:
 - DB replicas (read, write)
 - Metrics
 - Kubernetes for orchestration, load balancing, and API Gateway.
+
+## Setup
+
+### Account Service
+
+1. Create Volume
+
+```
+docker volume create pgaccount-data-dev
+docker volume create pgaccount-data-prod
+```
+
+2. Exec into Account Service Endpoint to create schema
+
+```
+ docker-compose exec account_api python manage.py create_db
+```
+
+3. Exec into DB to verify schema exist
+
+```
+docker-compose exec account_db_dev psql --username=user --dbname=account_db_dev
+
+# See list of databases
+  \l
+
+# Connect to database
+  \c account_db_dev
+
+# List relations (see schema)
+  \dt
+
+# quit
+  \q
+```
+
+If Migrations:
+
+1. (if new): initialize migration file path
+
+```
+docker-compose exec account_api flask db init
+```
+
+2. Initialize first migration
+
+```
+docker-compose exec account_api flask db migrate -m "initial migration"
+```
+
+3. Upgrade migration
+
+```
+docker-compose exec account_api flask upgrade
+```
+
+4. If another migration is needed:
+
+```
+docker-compose exec account_api flask db migrate -m "comment"
+docker-compose exec account_api flask upgrade
+```
