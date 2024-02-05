@@ -28,16 +28,15 @@ class Account(db.Model):
 
 @app.get("/")
 def read_root():
-    accounts = Account.query.all()
-    return jsonify(accounts)
+    return {"Endpoint": "Account"}
 
 # create a test route
-@app.route('/test', methods=['GET'])
+@app.route('/api/test', methods=['GET'])
 def test():
   return make_response(jsonify({'message': 'test route'}), 200)
 
 # create a account
-@app.route('/accounts', methods=['POST'])
+@app.route('/api/accounts', methods=['POST'])
 def create_account():
     try:
         data = request.get_json()
@@ -54,7 +53,7 @@ def create_account():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/accounts', methods=['GET'])
+@app.route('/api/accounts', methods=['GET'])
 def get_accounts():
     try:
         accounts = Account.query.all()
@@ -63,7 +62,7 @@ def get_accounts():
         return jsonify({'error': str(e)}), 500
 
 # get account by account_id
-@app.route('/accounts/<string:account_id>', methods=['GET'])
+@app.route('/api/accounts/<string:account_id>', methods=['GET'])
 def get_account(account_id):
     try:
         account = Account.query.filter_by(account_id=account_id).first()
@@ -74,7 +73,7 @@ def get_account(account_id):
         return jsonify({'error': str(e)}), 500
 
 # delete account
-@app.route('/accounts/<string:account_id>', methods=['DELETE'])
+@app.route('/api/accounts/<string:account_id>', methods=['DELETE'])
 def delete_account(account_id):
     try:
         account = Account.query.filter_by(account_id=account_id).first()
