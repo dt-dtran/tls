@@ -35,6 +35,9 @@ class CertificateDBBase(CertificateBase):
 
     class Config:
         orm_mode = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat() if v else None,
+        }
 
 # Properties to return to client
 class CertificateOut(CertificateDBBase):
