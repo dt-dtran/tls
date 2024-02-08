@@ -8,35 +8,48 @@ Microservices based architecture using RESTful API and JSON serialization. Each 
 
 Account service: Manage customer accounts
 
+- Backend: Flask
 - Database: postgreSQL DB
-- Endpoint: Create and Delete customers
+- Endpoint: Create and Delete accounts
 
 Certificate service: Manages certificates
 
-- Database?
-  - NoSQL for scalability
-  - SQL with indexing and sharding
+- Backend: FastAPI
+- Database: postgreSQL DB
 - Endpoint:
-  - Create, Update, and Delete certificates
-  - Get all certificates by customerID
-- Generate private key
-- Support millions of certificates
-- Publish message for event changes to Certificate Status
+  - Create certificates
+  - Update certificate is_active
+  - Get all certificates by Account ID
+  - Get certificates by certificate ID
+- External system (httpbin) of certificate creation and updates.
 
-Other:
+Other services:
 
-- frontend
-- kafka: Message broker for inter-service communication
-  - Listen to event changes to Certificate Status
-- redis: Caching layer between services and DB
+- traefik for reverse proxy and load balancing
 
-Consider:
+See more detail on:
 
-- Nginx proxy to route services
-- Service registry
-- DB replicas (read, write)
-- Metrics
-- Kubernetes for orchestration, load balancing, and API Gateway.
+- [Technology used](./docs/technology.md)
+- [Data Models](./docs/data-model.md)
+- [Account API](./docs/api/account.md)
+- [Account API](./docs/api/certificate.md)
+- [Cryptography](./docs/cryptography.md)
+
+<details>
+<summary> Backlog</summary>
+
+1. frontend
+2. redis: Caching layer between services and DB
+3. replica of DB (read, write)
+4. kafka: Message broker for inter-service communication
+
+- Listen to event changes to Certificate Status
+
+5. Service registry
+6. Metrics
+7. Kubernetes for orchestration, load balancing, and API Gateway.
+
+</details>
 
 ## Setup
 

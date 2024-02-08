@@ -1,34 +1,65 @@
 version: "3.8"
+name: dt-tls
 services:
-  account_api:
-    build: ./account-api
-    command: python manage.py run -h 0.0.0.0
+  certificate_api:
+    restart: always
+    image: dtdtran/tls-certificate
     volumes:
-      - ./account-api/:/app
+      - ./certificate-api/:/app
     ports:
-      - 5001:5000
+      - 5002:5002
     environment:
-      - FLASK_APP=init/__init__.py
-      - FLASK_DEBUG=1
-      - DATABASE_URL=postgresql://user:password@account_db_dev:5432/account_db_dev
+      - UVICORN_CMD=uvicorn main:app --reload --host 0.0.0.0 --port 5002
+      - PRIMARY_DATABASE_URL=postgresql://user:password@certificate_db_primary:5432/certificate_db_primary
+      - POST_URL=http://httpbin:80/post
     depends_on:
-      - account_db_dev
+      - certificate_db_primary
     networks:
-      - dev
-  account_db_dev:
-    image: postgres:15-alpine
+      - dt_app
+  certificate_db_primary:
+    restart: always
+    image: docker.io/bitnami/postgresql:16
     volumes:
-      - pgaccount-data-dev:/var/lib/postgresql/data/
+      - pgcertificate_primary_data:/var/lib/postgresql/data/
     environment:
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=account_db_dev
+      - POSTGRES_SERVER=certificate_db_primary
+      - POSTGRES_DB=certificate_db_primary
+      - POSTGRES_PORT=5432
+      - ALLOW_EMPTY_PASSWORD=yes
     ports:
       - "5432:5432"
     networks:
-      - dev
+      - dt_app
+  httpbin:
+    restart: always
+    image: arnaudlacour/httpbin
+    ports:
+      - "85:85"
+    networks:
+      - dt_app
+  proxy:
+    restart: always
+    image: traefik:v2.10
+    command: --api.insecure=true --providers.docker
+    ports:
+      # The HTTP port
+      - "80:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+      - "443:443"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - dt_app
 networks:
-  dev:
+  dt_app:
     driver: bridge
+
 volumes:
-  pgaccount-data-dev:
+  pgcertificate_primary_data:
