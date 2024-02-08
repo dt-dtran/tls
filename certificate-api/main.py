@@ -45,7 +45,7 @@ def get_db(db_request: Request):
     logger.info("[GET] DB session")
     return db_request.state.db
 
-@app.post("/certificates/", response_model=CertificateOut)
+@app.post("/api/certificates/", response_model=CertificateOut)
 def create_certificate(db: Session = Depends(get_db), account_id=UUID4):
     logger.info(f"[POST] cert for account_id: {account_id}")
 
@@ -78,7 +78,7 @@ def create_certificate(db: Session = Depends(get_db), account_id=UUID4):
 
     return db_item
 
-@app.get("/certificates/", response_model=List[CertificateOut])
+@app.get("/api/certificates/", response_model=List[CertificateOut])
 def get_certificates(db: Session = Depends(get_db)):
     try:
         logger.info("[GET] certs")
@@ -88,7 +88,7 @@ def get_certificates(db: Session = Depends(get_db)):
     except Exception as e:
         return {"error": e}
 
-@app.get("/certificates/{certificate_id}", response_model=CertificateOut)
+@app.get("/api/certificates/{certificate_id}", response_model=CertificateOut)
 def get_certificate_by_id(db: Session = Depends(get_db), certificate_id=int):
     try:
         logger.info("[GET] cert by ID")
@@ -99,7 +99,8 @@ def get_certificate_by_id(db: Session = Depends(get_db), certificate_id=int):
         return response
     except Exception as e:
          return {"error": e}
-@app.get("/certificates/{account_id}/", response_model=List[CertificateOut])
+
+@app.get("/api/certificates/{account_id}/", response_model=List[CertificateOut])
 def get_certificates_by_account(db: Session = Depends(get_db), account_id=UUID4):
     try:
         if account_id is None:
@@ -107,6 +108,7 @@ def get_certificates_by_account(db: Session = Depends(get_db), account_id=UUID4)
             raise HTTPException(status_code=404, detail="Account not found")
 
         logger.info(f"[GET] certs by accountID: {account_id}")
+
         response = db.query(models.CertificateModel).filter(models.CertificateModel.account_id == account_id).all()
 
         return response
@@ -114,7 +116,7 @@ def get_certificates_by_account(db: Session = Depends(get_db), account_id=UUID4)
         logger.error(f"Error retrieving certificates: {e}")
         return {"error": e}
 
-@app.patch("/certificates/{certificate_id}/deactivate/")
+@app.patch("/api/certificates/{certificate_id}/deactivate/")
 def deactivate_certificate(db: Session = Depends(get_db), certificate_id=int):
     try:
         logger.info(f"[PATCH] cert deactivate {certificate_id} Start")
@@ -145,7 +147,7 @@ def deactivate_certificate(db: Session = Depends(get_db), certificate_id=int):
         logger.error(f"Error deactivating certificate: {e}")
         return {"error": str(e)}
 
-@app.patch("/certificate/{certificate_id}/activate/")
+@app.patch("/api/certificate/{certificate_id}/activate/")
 def activate_certificate(db: Session = Depends(get_db), certificate_id=int):
     try:
         logger.info(f"[PATCH] cert activate {certificate_id}")
