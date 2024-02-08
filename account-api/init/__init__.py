@@ -18,22 +18,21 @@ class Account(db.Model):
     account_id = db.Column(db.String(50), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     email = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
+    first_name = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=False)
 
-    def __init__(self, email, password):
+    def __init__(self, email, password, first_name, last_name):
         self.email = email
         self.password = sha256_crypt.hash(password)
+        self.first_name = first_name
+        self.last_name = last_name
 
     def json(self):
-        return {'id': self.id, 'account_id': self.account_id, 'email': self.email, 'password': self.password}
+        return {'id': self.id, 'account_id': self.account_id, 'email': self.email, 'password': self.password, 'first_name': self.first_name, 'last_name': self.last_name}
 
 @app.get("/")
 def read_root():
     return {"Endpoint": "Account"}
-
-# create a test route
-@app.route('/api/test', methods=['GET'])
-def test():
-  return make_response(jsonify({'message': 'test route'}), 200)
 
 # create a account
 @app.route('/api/accounts', methods=['POST'])
@@ -42,14 +41,13 @@ def create_account():
         data = request.get_json()
         email = data.get('email')
         password = data.get('password')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
 
-        new_account = Account(email=email, password=password)
+        new_account = Account(email=email, password=password, first_name=first_name, last_name=last_name)
         db.session.add(new_account)
         db.session.commit()
         return make_response(jsonify({'message': 'Account created'}), 201)
-    # except IntegrityError as e:
-    #     db.session.rollback()
-    #     return jsonify({'error': 'Account already exists'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

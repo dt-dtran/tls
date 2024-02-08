@@ -4,9 +4,7 @@ name: certificate-prod
 services:
   certificate_api:
     restart: always
-    build:
-      context: certificate-api
-      dockerfile: Dockerfile
+    image: dtdtran/tls-certificate:v1
     volumes:
       - ./certificate-api/:/app
     ports:
@@ -14,7 +12,7 @@ services:
     environment:
       - UVICORN_CMD=uvicorn main:app --reload --host 0.0.0.0 --port 5002
       - PRIMARY_DATABASE_URL=postgresql://user:password@certificate_db_primary:5432/certificate_db_primary
-      - REPLICA_DATABASE_URL=postgresql://user:password@certificate_db_replic:5432/certificate_db_replic
+      - REPLICA_DATABASE_URL=postgresql://user:password@certificate_db_replic:5432/certificate_db_replica
       - POST_URL=http://httpbin:80/post
     depends_on:
       - certificate_db_dev

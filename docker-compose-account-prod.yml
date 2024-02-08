@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   account_api:
-    build: ./account-api
+    image: dtdtran/tls-account:v1
     command: python manage.py run -h 0.0.0.0
     volumes:
       - ./account-api/:/app
@@ -10,19 +10,19 @@ services:
     environment:
       - FLASK_APP=init/__init__.py
       - FLASK_DEBUG=1
-      - DATABASE_URL=postgresql://user:password@account_db:5432/account_db_prod
+      - DATABASE_URL=postgresql://user:password@account_db_primary:5432/account_db_primary
     depends_on:
-      - account_db
+      - account_db_primary
     networks:
       - prod
-  account_db:
-    image: postgres:15-alpine
+  account_db_primary:
+    image: docker.io/bitnami/postgresql:16
     volumes:
-      - pgaccount_data_prod:/var/lib/postgresql/data/
+      - pgaccount_primary_data:/var/lib/postgresql/data/
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=account_db_prod
+      - POSTGRES_DB=account_db_primary
     ports:
       - "5432:5432"
     networks:
@@ -31,4 +31,4 @@ networks:
   prod:
     driver: bridge
 volumes:
-  pgaccount_data_prod:
+  pgaccount_primary_data:

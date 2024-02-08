@@ -13,7 +13,7 @@ Parameters: JSON Request of Account ID
 
 Results: JSON object of certificate to deserialized into data form for DB.
 
-- httpbin response sent
+- httpbin POST response sent
 - datetime is in UTC format.
 
 ```json
@@ -50,7 +50,7 @@ Get a specific certificate by certificate ID
 
 Get certificates by Account ID
 
-- Parameters: JSON Request of Account ID
+- Parameters: JSON Request of Account ID (UUID string)
   - Since Account ID is an UUID format, Account is coverted to str.
 - Response: JSON Object List of certificates belonging to that Account ID
 

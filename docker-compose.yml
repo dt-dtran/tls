@@ -1,40 +1,14 @@
 version: "3.8"
 name: dt-tls
+networks:
+  dt_app:
+    driver: bridge
+
+volumes:
+  pgcertificate_primary_data:
+  pgaccount_primary_data:
+
 services:
-  certificate_api:
-    restart: always
-    image: dtdtran/tls-certificate
-    volumes:
-      - ./certificate-api/:/app
-    ports:
-      - 5002:5002
-    environment:
-      - UVICORN_CMD=uvicorn main:app --reload --host 0.0.0.0 --port 5002
-      - PRIMARY_DATABASE_URL=postgresql://user:password@certificate_db_primary:5432/certificate_db_primary
-      - POST_URL=http://httpbin:80/post
-    depends_on:
-      - certificate_db_primary
-    networks:
-      - dt_app
-  certificate_db_primary:
-    restart: always
-    image: docker.io/bitnami/postgresql:16
-    volumes:
-      - pgcertificate_primary_data:/var/lib/postgresql/data/
-    environment:
-      - POSTGRESQL_REPLICATION_MODE=master
-      - POSTGRESQL_REPLICATION_USER=repl_user
-      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_SERVER=certificate_db_primary
-      - POSTGRES_DB=certificate_db_primary
-      - POSTGRES_PORT=5432
-      - ALLOW_EMPTY_PASSWORD=yes
-    ports:
-      - "5432:5432"
-    networks:
-      - dt_app
   httpbin:
     restart: always
     image: arnaudlacour/httpbin
@@ -57,9 +31,140 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - dt_app
-networks:
-  dt_app:
-    driver: bridge
-
-volumes:
-  pgcertificate_primary_data:
+  certificate_api:
+    restart: always
+    image: dtdtran/tls-certificate:v1
+    volumes:
+      - ./certificate-api/:/app
+    ports:
+      - 5002:5002
+    environment:
+      - UVICORN_CMD=uvicorn main:app --host 0.0.0.0 --port 5002
+      - PRIMARY_DATABASE_URL=postgresql://user:password@certificate_db_primary:5432/certificate_db_primary
+      # - REPLICA_DATABASE_URL=postgresql://user:password@certificate_db_replica:5433/certificate_db_replica
+      - POST_URL=http://httpbin:80/post
+    depends_on:
+      - certificate_db_primary
+    networks:
+      - dt_app
+  certificate_api2:
+    restart: always
+    image: dtdtran/tls-certificate:v1
+    volumes:
+      - ./certificate-api/:/app
+    ports:
+      - 5004:5002
+    environment:
+      - UVICORN_CMD=uvicorn main:app --host 0.0.0.0 --port 5002
+      - PRIMARY_DATABASE_URL=postgresql://user:password@certificate_db_primary:5432/certificate_db_primary
+      # - REPLICA_DATABASE_URL=postgresql://user:password@certificate_db_replica:5433/certificate_db_replica
+      - POST_URL=http://httpbin:80/post
+    depends_on:
+      - certificate_db_primary
+    networks:
+      - dt_app
+  certificate_db_primary:
+    restart: always
+    image: docker.io/bitnami/postgresql:16
+    volumes:
+      - pgcertificate_primary_data:/bitnami/postgresql
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_SERVER=certificate_db_primary
+      - POSTGRES_DATABASE=certificate_db_primary
+      - POSTGRES_PORT=5432
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "5432:5432"
+    networks:
+      - dt_app
+  account_api:
+    restart: always
+    image: dtdtran/tls-account:v1
+    # build: ./account-api
+    command: python manage.py run -h 0.0.0.0
+    volumes:
+      - ./account-api/:/app
+    ports:
+      - 5001:5000
+    environment:
+      - FLASK_APP=init/__init__.py
+      - FLASK_DEBUG=1
+      - PRIMARY_DATABASE_URL=postgresql://user:password@account_db_primary:5432/account_db_primary
+      # - REPLICA_DATABASE_URL=postgresql://user:password@account_db_replica:5432/account_db_replica
+    depends_on:
+      - account_db_primary
+    networks:
+      - dt_app
+  account_api2:
+    restart: always
+    image: dtdtran/tls-account:v1
+    # build: ./account-api
+    command: python manage.py run -h 0.0.0.0
+    volumes:
+      - ./account-api/:/app
+    ports:
+      - 5003:5000
+    environment:
+      - FLASK_APP=init/__init__.py
+      - FLASK_DEBUG=1
+      - PRIMARY_DATABASE_URL=postgresql://user:password@account_db_primary:5432/account_db_primary
+      # - REPLICA_DATABASE_URL=postgresql://user:password@account_db_replica:5432/account_db_replica
+    depends_on:
+      - account_db_primary
+    networks:
+      - dt_app
+  account_db_primary:
+    restart: always
+    image: docker.io/bitnami/postgresql:16
+    volumes:
+      - pgaccount_primary_data:/bitnami/postgresql
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DATABASE=account_db_primary
+      - POSTGRES_PORT=5432
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "15432:5432"
+    networks:
+      - dt_app
+  # account_db_replica:
+  #   image: docker.io/bitnami/postgresql:16
+  #   volumes:
+  #     - pgaccount_primary_data:/bitnami/postgresql
+  #   environment:
+  #     - POSTGRESQL_REPLICATION_MODE=slave
+  #     - POSTGRESQL_REPLICATION_USER=repl_user
+  #     - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+  #     - POSTGRESQL_MASTER_HOST=account_db_primary
+  #     - POSTGRESQL_PASSWORD=password
+  #     - POSTGRESQL_MASTER_PORT_NUMBER=5432
+  #     - ALLOW_EMPTY_PASSWORD=yes
+  #   ports:
+  #     - "15433:5432"
+  #   networks:
+  #     - dt_app
+  # certificate_db_replica:
+  #   image: docker.io/bitnami/postgresql:16
+  #   ports:
+  #     - "5433"
+  #   depends_on:
+  #     - certificate_db_primary
+  #   environment:
+  #     - POSTGRESQL_REPLICATION_MODE=slave
+  #     - POSTGRESQL_REPLICATION_USER=repl_user
+  #     - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+  #     - POSTGRESQL_MASTER_HOST=certificate_db_primary
+  #     - POSTGRESQL_PASSWORD=password
+  #     - POSTGRESQL_MASTER_PORT_NUMBER=5433
+  #     - ALLOW_EMPTY_PASSWORD=yes
+  #   networks:
+  #     - dt_app
