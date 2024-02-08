@@ -1,0 +1,90 @@
+# WIP
+version: "3.8"
+name: certificate-prod
+services:
+  certificate_api:
+    restart: always
+    build:
+      context: certificate-api
+      dockerfile: Dockerfile
+    volumes:
+      - ./certificate-api/:/app
+    ports:
+      - 5002:5002
+    environment:
+      - UVICORN_CMD=uvicorn main:app --reload --host 0.0.0.0 --port 5002
+      - PRIMARY_DATABASE_URL=postgresql://user:password@certificate_db_primary:5432/certificate_db_primary
+      - REPLICA_DATABASE_URL=postgresql://user:password@certificate_db_replic:5432/certificate_db_replic
+      - POST_URL=http://httpbin:80/post
+    depends_on:
+      - certificate_db_dev
+    networks:
+      - microservices
+
+  certificate_db_primary:
+    restart: always
+    image: docker.io/bitnami/postgresql:16
+    ports:
+      - "5432"
+    volumes:
+      - "pgcertificate_primary_data:/bitnami/postgresql"
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+      - POSTGRESQL_USERNAME=user
+      - POSTGRESQL_PASSWORD=password
+      - POSTGRESQL_DATABASE=certificate_db_primary
+      - ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - microservices
+
+  certificate_db_replica:
+    restart: always
+    image: docker.io/bitnami/postgresql:16
+    ports:
+      - "5432"
+    depends_on:
+      - certificate_db_primary
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=slave
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+      - POSTGRESQL_MASTER_HOST=certificate_db_primary
+      - POSTGRESQL_PASSWORD=password
+      - POSTGRESQL_MASTER_PORT_NUMBER=5432
+      - ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - microservices
+
+  httpbin:
+    restart: always
+    image: arnaudlacour/httpbin
+    ports:
+      - "85:85"
+    networks:
+      - microservices
+
+  proxy:
+    restart: always
+    image: traefik:v2.10
+    command: --api.insecure=true --providers.docker
+    ports:
+      # The HTTP port
+      - "80:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+      - "443:443"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - microservices
+
+volumes:
+  pgcertificate_primary_data:
+    driver: local
+
+networks:
+  microservices:
+    driver: bridge
