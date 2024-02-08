@@ -9,7 +9,7 @@ class CertificateModel(Base):
     __tablename__ = 'certificate'
     id = Column(Integer, primary_key=True, index=True)
     account_id = Column(UUID(as_uuid=True), nullable=True)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)
     private_key = Column(LargeBinary, nullable=True)
     certificate_body = Column(LargeBinary, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
