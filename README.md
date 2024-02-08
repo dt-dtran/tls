@@ -48,10 +48,14 @@ See more detail on:
 - Listen to event changes to Certificate Status
 
 5. Service registry
-6. Metrics
+6. Metrics (healthy, DB load balance, resource utilization)
 7. Kubernetes for orchestration, load balancing, and API Gateway.
 
 </details>
+
+# Setup
+
+Clone the project
 
 ## Docker - Setup
 
@@ -65,6 +69,7 @@ docker compose --parallel 2 pull
 
 ```
 docker-compose up -d
+or docker-compose up -d --build
 ```
 
 ## Account Service - Setup
