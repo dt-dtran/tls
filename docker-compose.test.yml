@@ -1,0 +1,140 @@
+version: "3.8"
+name: dt-tls-test
+networks:
+  dt_app_test:
+    driver: bridge
+
+volumes:
+  pgcertificate_primary_test:
+  pgaccount_primary_test:
+
+services:
+  httpbin:
+    restart: always
+    image: arnaudlacour/httpbin
+    ports:
+      - "8585:85"
+    networks:
+      - dt_app_test
+  proxy:
+    restart: always
+    image: traefik:v2.10
+    command: --api.insecure=true --providers.docker
+    ports:
+      # The HTTP port
+      - "81:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8081:8080"
+      - "8443:443"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - dt_app_test
+  certificate_api:
+    restart: always
+    build:
+      context: certificate-api
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./certificate-api/:/app
+    ports:
+      - 5006:5002
+    environment:
+      - UVICORN_CMD=uvicorn main:app --host 0.0.0.0 --port 5002
+      - PRIMARY_DATABASE_URL=postgresql://user:password@certificate_db_primary_test:5432/certificate_db_primary_test
+      # - REPLICA_DATABASE_URL=postgresql://user:password@certificate_db_replica:5433/certificate_db_replica
+      - POST_URL=http://httpbin:80/post
+    depends_on:
+      - certificate_db_primary_test
+    networks:
+      - dt_app_test
+  certificate_api2:
+    restart: always
+    build:
+      context: certificate-api
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./certificate-api/:/app
+    ports:
+      - 5008:5002
+    environment:
+      - UVICORN_CMD=uvicorn main:app --host 0.0.0.0 --port 5002
+      - PRIMARY_DATABASE_URL=postgresql://user:password@certificate_db_primary_test:5432/certificate_db_primary_test
+      # - REPLICA_DATABASE_URL=postgresql://user:password@certificate_db_replica:5433/certificate_db_replica
+      - POST_URL=http://httpbin:80/post
+    depends_on:
+      - certificate_db_primary_test
+    networks:
+      - dt_app_test
+  certificate_db_primary_test:
+    restart: always
+    image: docker.io/bitnami/postgresql:16
+    volumes:
+      - pgcertificate_primary_test:/bitnami/postgresql
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_SERVER=certificate_db_primary_test
+      - POSTGRES_DATABASE=certificate_db_primary_test
+      - POSTGRES_PORT=5432
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "5438:5432"
+    networks:
+      - dt_app_test
+  account_api:
+    restart: always
+    build: ./account-api
+    command: python manage.py run -h 0.0.0.0
+    volumes:
+      - ./account-api/:/app
+    ports:
+      - 5005:5000
+    environment:
+      - FLASK_APP=init/__init__.py
+      - FLASK_DEBUG=1
+      - PRIMARY_DATABASE_URL=postgresql://user:password@account_db_primary_test:5432/account_db_primary_test
+      # - REPLICA_DATABASE_URL=postgresql://user:password@account_db_replica:5432/account_db_replica
+    depends_on:
+      - account_db_primary_test
+    networks:
+      - dt_app_test
+  account_api2:
+    restart: always
+    build: ./account-api
+    command: python manage.py run -h 0.0.0.0
+    volumes:
+      - ./account-api/:/app
+    ports:
+      - 5007:5000
+    environment:
+      - FLASK_APP=init/__init__.py
+      - FLASK_DEBUG=1
+      - PRIMARY_DATABASE_URL=postgresql://user:password@account_db_primary_test:5432/account_db_primary_test
+      # - REPLICA_DATABASE_URL=postgresql://user:password@account_db_replica:5432/account_db_replica
+    depends_on:
+      - account_db_primary_test
+    networks:
+      - dt_app_test
+  account_db_primary_test:
+    restart: always
+    image: docker.io/bitnami/postgresql:16
+    volumes:
+      - pgaccount_primary_test:/bitnami/postgresql
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DATABASE=account_db_primary_test
+      - POSTGRES_PORT=5432
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "15438:5432"
+    networks:
+      - dt_app_test
