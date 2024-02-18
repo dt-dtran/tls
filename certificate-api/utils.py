@@ -10,6 +10,7 @@ from fastapi.encoders import jsonable_encoder
 import logging
 import requests
 import os
+from uuid import UUID
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -34,7 +35,7 @@ def serialize_private_key(private_key):
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption()
     )
-    return private_key_bytes
+    return private_key_bytes.decode('utf-8')
 
 ## Generate certificate
 def generate_certificate_from_private_key(private_key, account_id):
@@ -64,13 +65,16 @@ def generate_certificate_from_private_key(private_key, account_id):
 
     serialized_cert = cert.public_bytes(encoding=serialization.Encoding.PEM,)
 
-    return serialized_cert
+    return serialized_cert.decode('utf-8')
 
 # Serialization
 ## Decode from DB (binary to string(remove ---))
 def serialize_byte(obj):
     string = base64.b64encode(obj).decode('utf-8')
     return string
+
+def serialize_datetime(obj):
+   return obj.isoformat()
 
 def remove_non_serializable_attributes(obj):
     if isinstance(obj, dict):
@@ -83,6 +87,10 @@ def remove_non_serializable_attributes(obj):
         return [remove_non_serializable_attributes(item) for item in obj]
     elif isinstance(obj, bytes):
         return serialize_byte(obj)
+    elif isinstance(obj, UUID):
+       return str(obj)
+    elif isinstance(obj, type(datetime)):
+       return serialize_datetime(obj)
     else:
         return jsonable_encoder(obj)
 

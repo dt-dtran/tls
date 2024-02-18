@@ -96,10 +96,14 @@ def test_get_certs(mock_db_request):
 
     try:
         response = client.get("/api/certificates/")
+
+        print("response", response.json())
         app.dependency_overrides = {}
         # get certs from mock_db
         query = mock_db_request.state.db.query.return_value.all.return_value
         serialized = remove_non_serializable_attributes(query)
+
+        print("serialized", serialized)
     except Exception as e:
         print(f"Error in test_create_cert: {e}")
         raise
