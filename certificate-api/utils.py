@@ -3,14 +3,14 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography import x509
 from cryptography.x509.oid import NameOID
-import base64
-import datetime
 from sqlalchemy.orm.state import InstanceState
 from fastapi.encoders import jsonable_encoder
 import logging
 import requests
 import os
 from uuid import UUID
+from datetime import datetime, timezone, timedelta
+
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -35,7 +35,7 @@ def serialize_private_key(private_key):
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption()
     )
-    return private_key_bytes.decode('utf-8')
+    return private_key_bytes
 
 ## Generate certificate
 def generate_certificate_from_private_key(private_key, account_id):
@@ -55,9 +55,9 @@ def generate_certificate_from_private_key(private_key, account_id):
     ).serial_number(
         x509.random_serial_number()
     ).not_valid_before(
-        datetime.datetime.now(datetime.timezone.utc)
+        datetime.now(timezone.utc)
     ).not_valid_after(
-        datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=365)
+        datetime.now(timezone.utc) + timedelta(days=365)
     ).add_extension(
         x509.SubjectAlternativeName([x509.DNSName("localhost")]),
         critical=False,
@@ -65,16 +65,20 @@ def generate_certificate_from_private_key(private_key, account_id):
 
     serialized_cert = cert.public_bytes(encoding=serialization.Encoding.PEM,)
 
-    return serialized_cert.decode('utf-8')
+    return serialized_cert
 
 # Serialization
 ## Decode from DB (binary to string(remove ---))
 def serialize_byte(obj):
-    string = base64.b64encode(obj).decode('utf-8')
+    string = (obj).decode('utf-8')
     return string
 
 def serialize_datetime(obj):
-   return obj.isoformat()
+    if isinstance(obj, datetime):
+        date = obj.isoformat()
+        return date
+    else:
+        return obj
 
 def remove_non_serializable_attributes(obj):
     if isinstance(obj, dict):
@@ -85,25 +89,29 @@ def remove_non_serializable_attributes(obj):
         }
     elif isinstance(obj, list):
         return [remove_non_serializable_attributes(item) for item in obj]
+    elif isinstance(obj, bool):
+        return obj
+    elif isinstance(obj, int):
+        return obj
     elif isinstance(obj, bytes):
         return serialize_byte(obj)
-    elif isinstance(obj, UUID):
-       return str(obj)
-    elif isinstance(obj, type(datetime)):
-       return serialize_datetime(obj)
+    elif isinstance(obj, datetime):
+        return serialize_datetime(obj)
     else:
-        return jsonable_encoder(obj)
+        # logger.info(f"[{type(obj)}]: {obj}")
+        return str(obj)
 
 # httpbin:
 def send_message_httpbin(method, obj, info):
     httpbin_url = os.getenv("POST_URL")
-
+    logger.info(f"[POST] payload: start")
     try:
-        payload = remove_non_serializable_attributes(obj.__dict__)
-        logger.info(f"[POST] payload: {payload}")
+        payload = remove_non_serializable_attributes(obj)
+        # logger.info(f"[POST] payload: {payload}")
+
         response = requests.post(httpbin_url, json=payload)
-        response.raise_for_status()
-        print(f"Method: {method}, Info: {info}")
-        logger.info(f"HTTPBin [{method}] {info} response: {response.json()}")
+
+        logger.info(f"[{method}] HTTPBin {info} response: {response.status_code}")
+
     except requests.RequestException as e:
         logger.error(f"Error sending [{method}]{info} request to httpbin: {e}")

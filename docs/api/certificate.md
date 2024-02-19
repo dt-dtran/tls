@@ -44,7 +44,7 @@ Get a specific certificate by certificate ID
 - Parameters: JSON Request of Certificate ID
 - Response: JSON Object of a certificate
 
-## Endpoint: /api/certificates/{account_id}/
+## Endpoint: /api/certificates/account/{account_id}/
 
 ### Method: GET
 
@@ -63,7 +63,7 @@ Get certificates by Account ID
 - Response: JSON Object of the certificate
   - httpbin response sent
 
-## Endpoint: /api/certificate/{certificate_id}/activate/
+## Endpoint: /api/certificates/{certificate_id}/activate/
 
 ### Method: PATCH
 

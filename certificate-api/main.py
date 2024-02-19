@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
+# from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from db.engine import SessionLocal, engine
 from db import models
@@ -8,8 +8,8 @@ from pydantic import UUID4
 import logging
 from typing import List
 from utils import *
-import requests
-import os
+# import os
+from fastapi.responses import JSONResponse
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -45,10 +45,7 @@ def get_db(db_request: Request):
     logger.info("[GET] DB session")
     return db_request.state.db
 
-@app.post("/api/certificates/", response_model=CertificateOut)
-def create_certificate(db: Session = Depends(get_db), account_id=UUID4):
-    logger.info(f"[POST] cert for account_id: {account_id}")
-
+def create_cert_data(account_id):
     privateKey = generate_private_key()
     # logger.info(f"[POST] generate for private_key: {privateKey}")
 
@@ -58,25 +55,39 @@ def create_certificate(db: Session = Depends(get_db), account_id=UUID4):
     certificate_body= generate_certificate_from_private_key(privateKey, account_id)
     # logger.info(f"[POST] cert for cert_body: {certificate_body}")
 
-    db_item = models.CertificateModel(
+    data = models.CertificateModel(
         account_id=account_id,
         private_key=serialPrivateKey,
         certificate_body=certificate_body,
     )
-    logger.info(f"[POST] cert: {db_item}")
+
+    return data
+
+@app.post("/api/certificates/", response_model=CertificateOut)
+def create_certificate(db: Session = Depends(get_db), account_id=UUID4):
+    logger.info("[POST] cert start")
+
+    data = create_cert_data(account_id)
+    # logger.info(f"[POST] cert - generate: {data}")
+
+    db_item = data
+    # logger.info(f"[POST] cert: {db_item}")
 
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
 
+    content = remove_non_serializable_attributes(db_item.__dict__)
+    # logger.info(f"[POST] serial: {content}")
+
     # POST request to httpbin
-    send_message_httpbin("POST", db_item, "")
+    send_message_httpbin("POST", content, "")
 
     if account_id is None:
         logger.warning("Account not found")
         raise HTTPException(status_code=404, detail="Account not found")
 
-    return db_item
+    return JSONResponse(content=content)
 
 @app.get("/api/certificates/", response_model=List[CertificateOut])
 def get_certificates(db: Session = Depends(get_db)):
@@ -92,15 +103,13 @@ def get_certificates(db: Session = Depends(get_db)):
 def get_certificate_by_id(db: Session = Depends(get_db), certificate_id=int):
     try:
         logger.info("[GET] cert by ID")
-        response = db.query(models.CertificateModel).filter(models.CertificateModel.id == certificate_id).first()
-        db_data_dict = response.__dict__ if response else None
+        response = db.query(models.CertificateModel).get(certificate_id)
 
-        logger.info(f"[GET]cert - id dump {db_data_dict}")
         return response
     except Exception as e:
          return {"error": e}
 
-@app.get("/api/certificates/{account_id}/", response_model=List[CertificateOut])
+@app.get("/api/certificates/account/{account_id}/", response_model=List[CertificateOut])
 def get_certificates_by_account(db: Session = Depends(get_db), account_id=UUID4):
     try:
         if account_id is None:
@@ -134,9 +143,13 @@ def deactivate_certificate(db: Session = Depends(get_db), certificate_id=int):
             else:
                 setattr(db_item, key, value)
 
+        logger.info(f"[PATCH] Deactivate {db_item.__dict__}")
+
         db.add(db_item)
         db.commit()
         db.refresh(db_item)
+
+        logger.info(f"[PATCH] Deactivate Up {update_dict}")
 
         # PATCH request to httpbin
         send_message_httpbin("PATCH", db_item, "DEACTIVATE")
@@ -147,7 +160,7 @@ def deactivate_certificate(db: Session = Depends(get_db), certificate_id=int):
         logger.error(f"Error deactivating certificate: {e}")
         return {"error": str(e)}
 
-@app.patch("/api/certificate/{certificate_id}/activate/")
+@app.patch("/api/certificates/{certificate_id}/activate/")
 def activate_certificate(db: Session = Depends(get_db), certificate_id=int):
     try:
         logger.info(f"[PATCH] cert activate {certificate_id}")

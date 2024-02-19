@@ -1,9 +1,8 @@
-from typing import Optional, Literal
-from pydantic import BaseModel, Field
+from typing import Optional
+from pydantic import BaseModel
 from datetime import datetime
-from uuid import uuid4, UUID
-from typing_extensions import Annotated
-import json
+from uuid import UUID
+# import json
 
 # Shared properties
 class CertificateBase(BaseModel):

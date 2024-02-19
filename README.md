@@ -187,7 +187,7 @@ curl -X 'GET' \
 
 ```
 curl -X 'GET' \
-  'http://localhost:5002/api/certificates/6268a212-f4e5-4b44-994c-973fd4b4daa0/' \
+  'http://localhost:5002/api/certificates/account/6268a212-f4e5-4b44-994c-973fd4b4daa0/' \
   -H 'accept: application/json'
 ```
 
@@ -203,6 +203,6 @@ curl -X 'PATCH' \
 
 ```
 curl -X 'PATCH' \
-  'http://localhost:5002/api/certificate/1/activate/' \
+  'http://localhost:5002/api/certificates/1/activate/' \
   -H 'accept: application/json'
 ```
