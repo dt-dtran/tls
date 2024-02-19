@@ -105,7 +105,7 @@ If no existing migrations folder start at step 2 else skip to step 4:
 
 4. Upgrade migration / Apply Existing migrations
 
-   - docker-compose exec account_api flask upgrade
+   - docker-compose exec account_api flask db upgrade
 
 5. If another migration is needed:
    - docker-compose exec account_api flask db migrate -m "comment"

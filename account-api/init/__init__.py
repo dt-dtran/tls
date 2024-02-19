@@ -34,6 +34,11 @@ class Account(db.Model):
 def read_root():
     return {"Endpoint": "Account"}
 
+@app.get("/health")
+def health_check():
+    content = {"status": "ok"}
+    return jsonify(status="ok")
+
 # create a account
 @app.route('/api/accounts', methods=['POST'])
 def create_account():

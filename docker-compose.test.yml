@@ -48,6 +48,15 @@ services:
       - APP_URL=http://certificate_api:5002
     depends_on:
       - certificate_db_primary_test
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -h certificate_db_primary_test -p 5432 -U user",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - dt_app_test
   certificate_api2:
@@ -64,7 +73,7 @@ services:
       - PRIMARY_DATABASE_URL=postgresql://user:password@certificate_db_primary_test:5432/certificate_db_primary_test
       # - REPLICA_DATABASE_URL=postgresql://user:password@certificate_db_replica:5433/certificate_db_replica
       - POST_URL=http://httpbin:80/post
-      - APP_URL=http://certificate_api:5002
+      - APP_URL=http://certificate_api2:5002
     depends_on:
       - certificate_db_primary_test
     networks:
@@ -90,7 +99,9 @@ services:
       - dt_app_test
   account_api:
     restart: always
-    build: ./account-api
+    build:
+      context: account-api
+      dockerfile: Dockerfile.test
     command: python manage.py run -h 0.0.0.0
     volumes:
       - ./account-api/:/app
@@ -100,6 +111,7 @@ services:
       - FLASK_APP=init/__init__.py
       - FLASK_DEBUG=1
       - PRIMARY_DATABASE_URL=postgresql://user:password@account_db_primary_test:5432/account_db_primary_test
+      - APP_URL=http://account_api:5000
       # - REPLICA_DATABASE_URL=postgresql://user:password@account_db_replica:5432/account_db_replica
     depends_on:
       - account_db_primary_test
@@ -107,7 +119,9 @@ services:
       - dt_app_test
   account_api2:
     restart: always
-    build: ./account-api
+    build:
+      context: account-api
+      dockerfile: Dockerfile.test
     command: python manage.py run -h 0.0.0.0
     volumes:
       - ./account-api/:/app
@@ -117,6 +131,7 @@ services:
       - FLASK_APP=init/__init__.py
       - FLASK_DEBUG=1
       - PRIMARY_DATABASE_URL=postgresql://user:password@account_db_primary_test:5432/account_db_primary_test
+      - APP_URL=http://account_api2:5000
       # - REPLICA_DATABASE_URL=postgresql://user:password@account_db_replica:5432/account_db_replica
     depends_on:
       - account_db_primary_test
