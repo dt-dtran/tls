@@ -27,6 +27,11 @@ app = FastAPI()
 def read_root():
     return {"Service": "Certificate Endpoint"}
 
+@app.get("/health")
+def health_check():
+    content = {"status": "ok"}
+    return JSONResponse(content=content)
+
 @app.middleware("http")
 async def db_session_middleware(session_request: Request, call_next):
     logger.info("Entering db_session_middleware")
@@ -46,6 +51,7 @@ def get_db(db_request: Request):
     return db_request.state.db
 
 def create_cert_data(account_id):
+    # account_id = account_id
     privateKey = generate_private_key()
     # logger.info(f"[POST] generate for private_key: {privateKey}")
 
@@ -66,6 +72,9 @@ def create_cert_data(account_id):
 @app.post("/api/certificates/", response_model=CertificateOut)
 def create_certificate(db: Session = Depends(get_db), account_id=UUID4):
     logger.info("[POST] cert start")
+    if account_id is None:
+        logger.warning("Account not found")
+        raise HTTPException(status_code=404, detail="Account not found")
 
     data = create_cert_data(account_id)
     # logger.info(f"[POST] cert - generate: {data}")
@@ -83,10 +92,7 @@ def create_certificate(db: Session = Depends(get_db), account_id=UUID4):
     # POST request to httpbin
     send_message_httpbin("POST", content, "")
 
-    if account_id is None:
-        logger.warning("Account not found")
-        raise HTTPException(status_code=404, detail="Account not found")
-
+    # return JSONResponse(content=content)
     return JSONResponse(content=content)
 
 @app.get("/api/certificates/", response_model=List[CertificateOut])
@@ -143,13 +149,9 @@ def deactivate_certificate(db: Session = Depends(get_db), certificate_id=int):
             else:
                 setattr(db_item, key, value)
 
-        logger.info(f"[PATCH] Deactivate {db_item.__dict__}")
-
         db.add(db_item)
         db.commit()
         db.refresh(db_item)
-
-        logger.info(f"[PATCH] Deactivate Up {update_dict}")
 
         # PATCH request to httpbin
         send_message_httpbin("PATCH", db_item, "DEACTIVATE")

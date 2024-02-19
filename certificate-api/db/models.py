@@ -1,14 +1,15 @@
-from sqlalchemy import Column, Integer, String, Boolean, LargeBinary, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, Boolean, LargeBinary, DateTime
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base
 from datetime import datetime
+import uuid
 
 Base = declarative_base()
 
 class CertificateModel(Base):
     __tablename__ = 'certificate'
     id = Column(Integer, primary_key=True, index=True)
-    account_id = Column(UUID(as_uuid=True), nullable=True)
+    account_id = Column(UUID(as_uuid=True), default=uuid.uuid4, nullable=True)
     is_active = Column(Boolean, default=False)
     private_key = Column(LargeBinary, nullable=True)
     certificate_body = Column(LargeBinary, nullable=True)

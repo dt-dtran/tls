@@ -1,7 +1,7 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, UUID4
 from datetime import datetime
-from uuid import UUID
+# from uuid import UUID
 # import json
 
 # Shared properties
@@ -15,12 +15,12 @@ class CertificateBase(BaseModel):
 
 # Properties received on create
 class CertificateCreate(CertificateBase):
-    account_id: UUID
+    account_id: UUID4
 
 # Properties received on update
 class CertificateUpdate(CertificateBase):
     is_active: bool
-    account_id: Optional[UUID] = None
+    account_id: Optional[UUID4] = None
 
 # Properties stored in DB
 class CertificateDBBase(CertificateBase):
@@ -28,7 +28,7 @@ class CertificateDBBase(CertificateBase):
     is_active: bool
     private_key: bytes
     certificate_body: bytes
-    account_id: UUID
+    account_id: UUID4
     created_at: datetime
     updated_at: datetime
 
@@ -36,6 +36,7 @@ class CertificateDBBase(CertificateBase):
         orm_mode = True
         json_encoders = {
             datetime: lambda v: v.isoformat() if v else None,
+            UUID4: lambda v: str(v) if v else None,
         }
 
 # Properties to return to client
@@ -48,13 +49,13 @@ class CertificateInDB(CertificateDBBase):
 
 # Shared properties
 class AccountVOBase(BaseModel):
-    account_id: UUID
+    account_id: UUID4
     first_name: str
     last_name: str
 
 # Properties stored in DB
 class AccountVODBBase(AccountVOBase):
-    account_id: UUID
+    account_id: UUID4
     first_name: str
     last_name: str
     created_at: datetime

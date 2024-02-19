@@ -45,6 +45,7 @@ services:
       - PRIMARY_DATABASE_URL=postgresql://user:password@certificate_db_primary_test:5432/certificate_db_primary_test
       # - REPLICA_DATABASE_URL=postgresql://user:password@certificate_db_replica:5433/certificate_db_replica
       - POST_URL=http://httpbin:80/post
+      - APP_URL=http://certificate_api:5002
     depends_on:
       - certificate_db_primary_test
     networks:
@@ -63,6 +64,7 @@ services:
       - PRIMARY_DATABASE_URL=postgresql://user:password@certificate_db_primary_test:5432/certificate_db_primary_test
       # - REPLICA_DATABASE_URL=postgresql://user:password@certificate_db_replica:5433/certificate_db_replica
       - POST_URL=http://httpbin:80/post
+      - APP_URL=http://certificate_api:5002
     depends_on:
       - certificate_db_primary_test
     networks:
